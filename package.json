@@ -1,0 +1,44 @@
+{
+  "name": "screenmagnify2",
+  "version": "1.0.0",
+  "description": "Lens magnifier for the screen (frozen or live) with filters and AI upscalers",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check electron/main.js && node --check electron/preload.js && node --check electron/ai-worker.js && node --check public/js/lens.js && node --check public/js/settings.js && node --check public/js/save-dialog.js && node --check public/js/main.js && node --check public/js/methods.js && node --check public/js/cpu-scaler.js && node --check public/js/upscaler.js && node --check public/js/nis-coefs.js",
+    "dist": "electron-builder --win dir && node scripts/zip-release.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "onnxruntime-node": "^1.31.1"
+  },
+  "devDependencies": {
+    "electron": "^45.3.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.madwind.screenmagnify2",
+    "productName": "ScreenMagnify2",
+    "directories": {
+      "output": "release"
+    },
+    "asar": false,
+    "files": [
+      "electron/**",
+      "public/**",
+      "package.json",
+      "!node_modules/onnxruntime-node/bin/napi-v6/{darwin,linux}/**",
+      "!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**"
+    ],
+    "extraResources": [
+      {
+        "from": "models",
+        "to": "models"
+      }
+    ],
+    "win": {
+      "target": "dir",
+      "icon": "public/assets/icon.png"
+    }
+  }
+}

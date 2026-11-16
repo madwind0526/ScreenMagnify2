@@ -15,6 +15,8 @@ Plain HTML/CSS/JS (no bundler, no TypeScript), Electron 45 (frameless windows), 
 ```bash
 npm start              # run in Electron
 npm run check          # node --check on the scripts
+npx electron scripts/capture-docs.cjs   # store cut-outs from the real windows (store/, git-ignored), then:
+python scripts/store-mockup.py        # store/promo/*.png + store/feature-1024x500.png
 npm run dist           # release/ScreenMagnify2-<version>.zip (electron-builder dir target, asar off, unsigned)
 start.bat / stop.bat   # start, and stop only the "ScreenMagnify2" Electron windows
 ```

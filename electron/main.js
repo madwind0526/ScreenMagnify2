@@ -9,7 +9,7 @@ const METHOD_IDS = ['nearest', 'bilinear', 'bicubic-catmull', 'lanczos3', 'nis',
 // GPU-only methods fall back on the CPU (keep in sync with `fallback` in public/js/methods.js).
 const GPU_ONLY = { nis: 'lanczos3', 'realesrgan-x4plus': 'realesrgan' };
 const LENS_STYLES = ['clean', 'bold', 'classic'];
-const DEFAULT_SETTINGS = { alwaysOnTop: true, freeze: true, delay: 0, theme: 'dark', shape: 'rect', lensSize: 10, lensStyle: 'clean', method: 'realesrgan', aiDevice: 'cpu', aiMaxSize: -1, lensMaxScale: 2, lastSaveDir: '', customPaths: [] };
+const DEFAULT_SETTINGS = { alwaysOnTop: true, freeze: true, delay: 0, theme: 'dark', shape: 'rect', lensSize: 10, lensStyle: 'clean', method: 'realesrgan', aiDevice: 'cpu', aiMaxSize: -1, lensMaxScale: 2, runHotkey: 'Control+Q', lastSaveDir: '', customPaths: [] };
 
 let settings = { ...DEFAULT_SETTINGS, customPaths: [] };
 let mainWindow = null;
@@ -55,6 +55,7 @@ function validateSettings() {
   settings.lensSize = Math.max(5, Math.min(40, Math.round(Number(settings.lensSize) || 10)));
   // Largest Ctrl+wheel size as a multiple of the start size (whole number, 1 to 5).
   settings.lensMaxScale = Math.max(1, Math.min(5, Math.round(Number(settings.lensMaxScale) || 2)));
+  if (!validHotkey(settings.runHotkey)) settings.runHotkey = DEFAULT_SETTINGS.runHotkey;
   if (typeof settings.lastSaveDir !== 'string') settings.lastSaveDir = '';
   if (!Array.isArray(settings.customPaths)) settings.customPaths = [];
   settings.customPaths = settings.customPaths
@@ -148,21 +149,34 @@ function createMainWindow() {
   });
 }
 
-// Ctrl+Q starts a run from anywhere, but only while the main window is shown. A minimized, hidden (selection or
+// An accelerator is "Control"/"Alt"/"Shift" modifiers (at least Control or Alt) plus one letter, digit or F1..F24.
+function validHotkey(value) {
+  if (typeof value !== 'string') return false;
+  const parts = value.split('+');
+  const key = parts.pop();
+  if (!/^([A-Z0-9]|F([1-9]|1[0-9]|2[0-4]))$/.test(key)) return false;
+  if (new Set(parts).size !== parts.length || !parts.every((part) => ['Control', 'Alt', 'Shift'].includes(part))) return false;
+  return parts.includes('Control') || parts.includes('Alt');
+}
+
+// The run hotkey starts a lens from anywhere, but only while the main window is shown. A minimized, hidden (selection or
 // lens in progress) or closed app does not register it, so the key keeps working in other programs then.
-const RUN_HOTKEY = 'Control+Q';
+let registeredHotkey = null;
+let hotkeyCapturing = false; // the settings window is recording a new key
 function syncRunHotkey() {
-  const active = !!mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized();
-  if (!active) {
-    globalShortcut.unregister(RUN_HOTKEY);
-    return;
+  const active = !!mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized() && !hotkeyCapturing;
+  const wanted = active ? settings.runHotkey : null;
+  if (registeredHotkey && registeredHotkey !== wanted) {
+    globalShortcut.unregister(registeredHotkey);
+    registeredHotkey = null;
   }
-  if (globalShortcut.isRegistered(RUN_HOTKEY)) return;
+  if (!wanted || registeredHotkey) return;
   try {
     // The main window's page starts the run, so the countdown and the busy state work as for a click.
-    globalShortcut.register(RUN_HOTKEY, () => {
+    const ok = globalShortcut.register(wanted, () => {
       if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized()) mainWindow.webContents.send('hotkey:run');
     });
+    if (ok) registeredHotkey = wanted;
   } catch {
     // Another program owns the key: the button still works.
   }
@@ -178,7 +192,7 @@ function toggleSettingsWindow() {
     x: bounds.x,
     y: bounds.y + bounds.height + 8,
     width: 290,
-    height: 454,
+    height: 424,
     minimizable: false,
     title: `${APP_NAME} 설정`
   }));
@@ -327,6 +341,11 @@ function finishLens() {
 }
 
 function setupIpc() {
+  ipcMain.on('hotkey:capture', (event, on) => {
+    hotkeyCapturing = !!on;
+    syncRunHotkey();
+  });
+
   ipcMain.handle('settings:get', () => ({ ...settings, customPaths: [...settings.customPaths] }));
   ipcMain.handle('settings:set', (event, patch) => {
     if (patch && typeof patch === 'object' && fromPanel(event)) {
@@ -334,6 +353,7 @@ function setupIpc() {
       validateSettings();
       saveSettings();
       for (const win of [mainWindow, settingsWindow]) if (win && !win.isDestroyed()) win.setAlwaysOnTop(settings.alwaysOnTop);
+      syncRunHotkey();
       broadcast('settings:changed', { ...settings, customPaths: [...settings.customPaths] });
     }
     return { ...settings, customPaths: [...settings.customPaths] };

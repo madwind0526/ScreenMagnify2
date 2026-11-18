@@ -2,6 +2,7 @@
   const $ = (id) => document.getElementById(id);
 
   function apply(next) {
+    if (document.activeElement !== $('set-hk')) $('set-hk').value = hotkeyLabel(next.runHotkey);
     document.documentElement.dataset.theme = next.theme === 'light' ? 'light' : 'dark';
     $('set-top').checked = !!next.alwaysOnTop;
     $('set-freeze').checked = next.freeze !== false;
@@ -26,6 +27,7 @@
     return value;
   };
 
+  bindHotkey($('set-hk'), (accelerator) => save({ runHotkey: accelerator }));
   $('btn-close').addEventListener('click', () => window.api.window.close());
   $('set-top').addEventListener('change', (e) => save({ alwaysOnTop: e.target.checked }));
   $('set-freeze').addEventListener('change', (e) => save({ freeze: e.target.checked }));

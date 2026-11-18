@@ -1,6 +1,6 @@
 {
   "name": "screenmagnify2",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Lens magnifier for the screen (frozen or live) with filters and AI upscalers",
   "main": "electron/main.js",
   "scripts": {

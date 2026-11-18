@@ -17,6 +17,7 @@
 
   function apply(next) {
     current = next;
+    runButton.title = `실행 (Ctrl+Enter, ${next.runHotkey.replace('Control', 'Ctrl')})`;
     document.documentElement.dataset.theme = next.theme === 'light' ? 'light' : 'dark';
     document.querySelectorAll('.shape').forEach((button) => {
       button.classList.toggle('active', button.dataset.shape === next.shape);

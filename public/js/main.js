@@ -69,6 +69,7 @@
     }
   });
 
+  window.api.onHotkeyRun(run);
   window.api.selection.onDone(() => setBusy(false));
   window.api.selection.onError((message) => {
     setBusy(false);

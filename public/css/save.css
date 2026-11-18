@@ -1,8 +1,8 @@
 /* Save dialog, copied from ScreenMagnify (result.css / main.css). Square corners like the rest of the app. */
 :root {
   
-  --bg: #0b0c10;
-  --bg-soft: #10121a;
+  --bg: #08162e;
+  --bg-soft: #0e1f40;
   --bg-glow: rgba(124, 106, 247, 0.16);
   --panel: #171a23;
   --panel-soft: #1d2130;

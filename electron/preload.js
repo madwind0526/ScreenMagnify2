@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
     minimize: () => ipcRenderer.send('window:minimize'),
     close: () => ipcRenderer.send('window:close')
   },
+  onHotkeyRun: (callback) => on('hotkey:run', callback),
   selection: {
     start: () => ipcRenderer.invoke('lens:start'),
     onDone: (callback) => on('selection:done', callback),

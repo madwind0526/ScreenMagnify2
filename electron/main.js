@@ -139,11 +139,33 @@ function createMainWindow() {
     mainWindow.show();
     mainWindow.focus();
   });
+  for (const name of ['show', 'hide', 'minimize', 'restore']) mainWindow.on(name, syncRunHotkey);
   mainWindow.on('closed', () => {
     mainWindow = null;
+    syncRunHotkey();
     closeLens();
     if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.destroy();
   });
+}
+
+// Ctrl+Q starts a run from anywhere, but only while the main window is shown. A minimized, hidden (selection or
+// lens in progress) or closed app does not register it, so the key keeps working in other programs then.
+const RUN_HOTKEY = 'Control+Q';
+function syncRunHotkey() {
+  const active = !!mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized();
+  if (!active) {
+    globalShortcut.unregister(RUN_HOTKEY);
+    return;
+  }
+  if (globalShortcut.isRegistered(RUN_HOTKEY)) return;
+  try {
+    // The main window's page starts the run, so the countdown and the busy state work as for a click.
+    globalShortcut.register(RUN_HOTKEY, () => {
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized()) mainWindow.webContents.send('hotkey:run');
+    });
+  } catch {
+    // Another program owns the key: the button still works.
+  }
 }
 
 function toggleSettingsWindow() {
